@@ -23,10 +23,36 @@ function loadPack(packId) {
 }
 
 /**
+ * Deterministically parses CI logs to extract test statuses.
+ * No LLM involved. Pure code.
+ */
+function parseCILogs(logContent) {
+  const parsed = {};
+  // Matches: [16:45:19] tests/test_linting.py ........ PASSED (1.8s)
+  const regex = /^\[\d{2}:\d{2}:\d{2}\]\s+([\w/.-]+)\s+\.+\s+(PASSED|FAILED|SKIPPED)/gm;
+  let match;
+  while ((match = regex.exec(logContent)) !== null) {
+    parsed[match[1]] = match[2];
+  }
+  return parsed;
+}
+
+/**
+ * Deterministically evaluates the verdict based on log status.
+ */
+function evaluateVerdict(testFile, parsedLogs) {
+  if (!testFile || !parsedLogs[testFile]) return VERDICT.UNVERIFIED;
+  const status = parsedLogs[testFile];
+  if (status === 'PASSED') return VERDICT.VERIFIED;
+  if (status === 'FAILED') return VERDICT.CONTRADICTED;
+  return VERDICT.UNVERIFIED; // SKIPPED or missing
+}
+
+/**
  * Main verification function.
  * 
  * Takes the agent's output, raw log content, API key, endpoint, and pack ID.
- * Cross-checks every claim intelligently using an LLM.
+ * LLM strictly maps claims to log targets. Deterministic code issues the verdict.
  */
 async function verifyAgentOutput(agentOutput, logContent, apiKey, endpoint, packId = 'devops_qa') {
   if (!apiKey || !endpoint) {
@@ -39,10 +65,13 @@ async function verifyAgentOutput(agentOutput, logContent, apiKey, endpoint, pack
     apiVersion: "2024-12-01-preview"
   });
 
-  // 1. Ask the LLM to cross-check claims against the logs
+  // 0. Parse the logs deterministically
+  const parsedLogs = parseCILogs(logContent);
+
+  // 1. Ask the LLM ONLY to map claims to test files
   const prompt = `
-You are Doubt, an objective verification engine.
-Your task is to cross-check an AI agent's claims about a code review against the actual raw CI pipeline logs.
+You are Doubt's Semantic Router. Your ONLY job is to map natural language claims to structured log targets.
+Do NOT issue verdicts. Do NOT judge pass/fail.
 
 Agent's Claims:
 ${JSON.stringify(agentOutput.checklist, null, 2)}
@@ -51,22 +80,20 @@ CI Pipeline Logs:
 ${logContent}
 
 Instructions:
-For each claim in the agent's checklist, determine if the log supports it, contradicts it, or if there's no evidence/the test was skipped.
-Return a JSON object with a single key "evidence" containing an array of objects.
+For each claim in the agent's checklist, map it to the exact test file name in the CI log.
+Return a JSON object with a single key "mapping" containing an array of objects.
 For each object, include:
 - "itemName": The exact name of the item from the agent's checklist (e.g. "Linting")
 - "claim": The agent's original claim string (e.g. "Linting: pass")
-- "testFile": The name of the test file relevant to this claim from the logs (e.g. "test_linting.py"), or null if unknown
-- "groundTruth": A concise sentence stating what the log actually says happened (e.g. "test_linting.py executed and PASSED")
-- "verdict": Exactly one of "VERIFIED" (log proves claim), "CONTRADICTED" (log proves claim is false), or "UNVERIFIED" (log has no evidence / test was skipped / test not found).
-- "details": A brief raw snippet or summary from the log as proof (do not hallucinate, use exact substrings from the log if possible).
+- "testFile": The exact name of the test file relevant to this claim from the logs (e.g. "tests/test_linting.py"), or null if unknown
+- "details": A brief raw snippet or summary from the log as proof (e.g. "tests/test_linting.py executed")
 `;
 
-  console.log('[Doubt] Calling LLM to parse and verify logs...');
+  console.log('[Doubt] Calling LLM strictly for semantic routing...');
   const completion = await openai.chat.completions.create({
     model: 'gpt-5.4-nano',
     messages: [
-      { role: 'system', content: 'You are a deterministic, objective log verification engine. Output valid JSON only.' },
+      { role: 'system', content: 'You are a deterministic semantic router. Output valid JSON only. Do not judge verdicts.' },
       { role: 'user', content: prompt }
     ],
     response_format: { type: "json_object" },
@@ -74,7 +101,7 @@ For each object, include:
   });
 
   const llmResponse = JSON.parse(completion.choices[0].message.content);
-  const rawEvidence = llmResponse.evidence || [];
+  const mappings = llmResponse.mapping || [];
 
   const evidence = [];
   let verifiedCount = 0;
@@ -83,12 +110,23 @@ For each object, include:
   // 2. Map LLM evidence to our deterministic severity packs
   const pack = loadPack(packId);
 
-  for (const item of rawEvidence) {
-    const packEntry = findPackEntry(item.itemName, pack.claims);
+  for (const m of mappings) {
+    const packEntry = findPackEntry(m.itemName, pack.claims);
     
-    // Inject deterministic severity
-    item.severity = packEntry ? packEntry.severity : SEVERITY.INFO;
-    item.category = packEntry ? packEntry.category : 'unknown';
+    // Model sits entirely outside the decision path here.
+    // The block/allow decision is derived purely from deterministic code.
+    const verdict = evaluateVerdict(m.testFile, parsedLogs);
+    
+    const item = {
+      itemName: m.itemName,
+      claim: m.claim,
+      testFile: m.testFile,
+      verdict: verdict,
+      details: m.details,
+      // Inject deterministic severity
+      severity: packEntry ? packEntry.severity : SEVERITY.INFO,
+      category: packEntry ? packEntry.category : 'unknown'
+    };
     
     evidence.push(item);
 
