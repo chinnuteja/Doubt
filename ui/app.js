@@ -349,3 +349,9 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+// ─── Initialization ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Show the About modal on first load so users immediately see the thesis
+  showAboutModal();
+});
