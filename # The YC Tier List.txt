@@ -1,0 +1,19 @@
+# The YC Tier List
+
+[Home](https://yctierlist.com/)
+
+# Sentrial
+Production Monitoring for AI Agents
+[https://sentrial.com](https://sentrial.com/)
+
+## Verdict
+Sentrial has a functional product — live SDK, pricing, and docs visible — in a legitimate and growing market. The team is two Berkeley undergrads whose combined professional experience is a handful of internships, which is a real credibility gap when selling devtools to senior engineering teams. The competitive landscape is well-established: LangSmith, Langfuse, Helicone, and Arize all have real customer bases. No paying customers or meaningful traction are visible. The product exists and the market is real — the question is whether the team can out-execute funded incumbents before the space commoditizes.
+
+## Active Founders
+Neel is the co-founder of Sentrial - production monitoring for AI products. He studied Computer Science at UC Berkeley and worked on agentic optimization at Sense. He saw firsthand that traditional evaluation frameworks break down once agents hit production. That insight led to the creation of Sentrial, a platform built to monitor, evaluate, and improve agent performance in real-world, production environments. contact: [[email protected]](https://yctierlist.com/cdn-cgi/l/email-protection)
+Anay is the co-founder of Sentrial. He studied Computer Science at UC Berkeley and worked on deploying agents at Accenture. After seeing how quickly agent behavior can drift and break once it’s live, he started Sentrial to bring clear, continuous production monitoring to AI agents. contact: [[email protected]](https://yctierlist.com/cdn-cgi/l/email-protection)
+[Disagree with this rating? Let us know](https://forms.gle/w46GfwAp6Fm24SJW9)
+[YC](https://www.ycombinator.com/companies/sentrial)
+[YC Tier List](https://yctierlist.com/)
+A fun experiment to see if AI can analyse companies using publicly available signals and rank them.
+[Disagree with a rating? Tell us why →](https://forms.gle/w46GfwAp6Fm24SJW9)

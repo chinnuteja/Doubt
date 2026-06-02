@@ -1,0 +1,123 @@
+================================================================================
+  CI/CD TEST RUNNER — payment-service v2.3
+  Pipeline: deploy/payment-service/pr-847
+  Triggered by: sarah.chen (push to feature/billing-v2.3)
+  Runner: ci-runner-prod-07 | Ubuntu 22.04 | Python 3.11.4
+  Started: 2026-05-28T16:45:12Z
+================================================================================
+
+[16:45:13] Installing dependencies from requirements.txt... done (4.2s)
+[16:45:17] Activating virtual environment... done
+[16:45:18] Starting test discovery...
+[16:45:18] Found 14 test modules in tests/
+
+================================================================================
+  RUNNING TESTS
+================================================================================
+
+[16:45:19] tests/test_linting.py ............................................. PASSED (1.8s)
+           ✓ pylint score: 9.82/10 (threshold: 9.0)
+           ✓ flake8: 0 errors, 0 warnings
+           
+[16:45:21] tests/test_type_checking.py ....................................... PASSED (3.4s)
+           ✓ mypy strict mode: 0 errors found
+           ✓ All function signatures fully typed
+           
+[16:45:24] tests/test_formatting.py .......................................... PASSED (0.9s)
+           ✓ black: all files formatted correctly
+           ✓ isort: import ordering consistent
+
+[16:45:25] tests/test_unit.py ................................................ PASSED (6.1s)
+           ✓ 47 tests passed
+           ✓ 0 tests failed
+           ✓ Coverage: 83.2%
+
+[16:45:32] tests/test_integration.py ......................................... PASSED (8.7s)
+           ✓ Payment flow end-to-end: PASS
+           ✓ Refund flow end-to-end: PASS
+           ✓ Webhook flow end-to-end: PASS
+
+[16:45:40] tests/test_api_contract.py ........................................ PASSED (2.1s)
+           ✓ OpenAPI spec validation: all endpoints match
+           ✓ Request/response schemas valid
+           ✓ No breaking changes detected
+
+[16:45:43] tests/test_sql_injection.py ....................................... SKIPPED
+           ⚠ Test skipped: dependency 'sqlmap-wrapper' not found in environment
+           ⚠ Install with: pip install sqlmap-wrapper>=2.1.0
+           ⚠ This test requires the security scanning toolkit
+
+[16:45:43] tests/test_auth_verification.py ................................... PASSED (1.9s)
+           ✓ All endpoints require authentication
+           ✓ Invalid tokens rejected with 401
+           ✓ Expired tokens rejected with 401
+
+[16:45:45] tests/test_webhook_signatures.py .................................. PASSED (1.2s)
+           ✓ Valid signatures accepted
+           ✓ Invalid signatures rejected
+           ✓ Tampered payloads rejected
+
+[16:45:47] tests/test_null_handling.py ....................................... FAILED (2.3s)
+           ✗ test_process_payment_null_billing_address
+             > process_payment.py:78: AttributeError: 'NoneType' object has no attribute 'zip_code'
+             > 
+             > Expected: PaymentProcessor.process_charge() should return 
+             >   {'status': 'failed', 'error': 'Billing address required'}
+             >   when user.billing_address is None
+             > 
+             > Actual: Unhandled AttributeError raised — no null check on 
+             >   billing_address before accessing .zip_code
+             >
+           ✗ test_process_payment_partial_billing_address
+             > process_payment.py:78: AttributeError: 'NoneType' object has no attribute 'zip_code'
+             >
+           ✓ test_process_payment_valid_billing_address
+           
+           Results: 1 passed, 2 failed
+
+[16:45:49] tests/test_concurrency.py ......................................... SKIPPED
+           ⚠ Test skipped: requires --run-concurrent flag
+           ⚠ Concurrent tests disabled in standard CI pipeline
+           ⚠ Run manually with: pytest tests/test_concurrency.py --run-concurrent
+
+[16:45:49] tests/test_idempotency.py ......................................... PASSED (1.7s)
+           ✓ Duplicate charge requests safely deduplicated
+           ✓ Duplicate webhook events safely ignored
+           ✓ Idempotency keys correctly tracked
+
+[16:45:51] tests/test_logging.py ............................................. PASSED (0.8s)
+           ✓ All critical paths emit structured logs
+           ✓ Log levels appropriate (INFO for success, ERROR for failures)
+           ✓ No sensitive data in log output
+
+[16:45:52] tests/test_error_handling.py ...................................... PASSED (1.4s)
+           ✓ Gateway errors caught and surfaced
+           ✓ Database errors caught and surfaced  
+           ✓ User-facing error messages are actionable
+           ✓ No unhandled exceptions in happy path
+
+================================================================================
+  TEST SUMMARY
+================================================================================
+
+  Total test modules:  14
+  Passed:              11
+  Failed:               1  (test_null_handling.py)
+  Skipped:              2  (test_sql_injection.py, test_concurrency.py)
+  
+  Total assertions:   127
+  Passed assertions:  124
+  Failed assertions:    3
+
+  Coverage:           83.2%
+  
+  Duration:           40.8s
+
+================================================================================
+  VERDICT: PIPELINE FAILED — 1 test module failed, 2 skipped
+  
+  Action required before merge:
+    1. Fix null handling in process_payment.py (2 assertions failed)
+    2. Install sqlmap-wrapper and re-run SQL injection tests
+    3. Enable concurrent test flag and verify race condition safety
+================================================================================

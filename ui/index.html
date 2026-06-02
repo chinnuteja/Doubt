@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doubt — Pre-Execution Verification Gate</title>
+  <meta name="description" content="Doubt catches AI agents that confidently skip steps. Ground-truth verification before irreversible actions fire.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ─── Top Navigation Bar ─── -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <span class="logo-icon">◆</span>
+        <span class="logo-text">Doubt</span>
+      </div>
+      <span class="topbar-divider"></span>
+      <select id="packSelector" class="pack-selector">
+        <option value="devops_qa">✅ DevOps QA (GitHub Actions)</option>
+        <option value="customer_support" disabled>🔒 Customer Support (Stripe) - Preview</option>
+        <option value="legal_contracts" disabled>🔒 Legal Review (DocuSign) - Preview</option>
+      </select>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="showAboutModal()" style="padding: 6px 12px; font-size: 0.8rem;">
+        <span class="btn-icon">💡</span>
+        What is Doubt?
+      </button>
+      <div class="status-pill" id="statusPill">
+        <span class="status-dot"></span>
+        <span class="status-text">Ready</span>
+      </div>
+      <button id="btnRunAgent" class="btn btn-primary" onclick="runAgent()">
+        <span class="btn-icon">▶</span>
+        Run QA Agent
+      </button>
+      <button id="btnVerify" class="btn btn-danger" onclick="runVerification()" disabled>
+        <span class="btn-icon">◆</span>
+        Verify with Doubt
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Main Three-Panel Layout ─── -->
+  <main id="mainContent">
+    <!-- ─── Left Panel: Agent Verdict ─── -->
+    <section id="panelAgent" class="panel panel-left">
+      <div class="panel-header">
+        <div class="panel-icon agent-icon">🤖</div>
+        <div class="panel-title-group">
+          <h2 class="panel-title">Agent Verdict</h2>
+          <p class="panel-subtitle">QA Review — payment-service v2.3</p>
+        </div>
+      </div>
+      <div class="panel-body" id="agentBody">
+        <div class="empty-state" id="agentEmptyState">
+          <div class="empty-icon">⚡</div>
+          <p>Click <strong>"Run QA Agent"</strong> to start the automated code review</p>
+          <p class="empty-hint">The agent will review 6 files against a 14-point checklist</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Center Column: Doubt Score ─── -->
+    <section id="panelScore" class="panel panel-center">
+      <div class="score-container" id="scoreContainer">
+        <div class="score-ring" id="scoreRing">
+          <svg viewBox="0 0 200 200" class="score-svg">
+            <circle cx="100" cy="100" r="85" class="score-track" />
+            <circle cx="100" cy="100" r="85" class="score-fill" id="scoreFill"
+              stroke-dasharray="534" stroke-dashoffset="534" />
+          </svg>
+          <div class="score-value" id="scoreValue">—</div>
+          <div class="score-label">DOUBT SCORE</div>
+        </div>
+        <div class="score-summary" id="scoreSummary">
+          <p class="score-waiting">Waiting for verification</p>
+        </div>
+        <div class="score-stats" id="scoreStats"></div>
+        <button id="btnHold" class="btn btn-hold" style="display: none;" onclick="showEndScreen()">
+          🛑 HOLD DEPLOYMENT
+        </button>
+      </div>
+    </section>
+
+    <!-- ─── Right Panel: Ground Truth Evidence ─── -->
+    <section id="panelEvidence" class="panel panel-right">
+      <div class="panel-header">
+        <div class="panel-icon evidence-icon">🔍</div>
+        <div class="panel-title-group">
+          <h2 class="panel-title">Ground Truth Evidence</h2>
+          <p class="panel-subtitle">Verification against CI Pipeline Logs</p>
+        </div>
+      </div>
+      <div class="panel-body" id="evidenceBody">
+        <div class="empty-state" id="evidenceEmptyState">
+          <div class="empty-icon">🔒</div>
+          <p>Verification evidence will appear here</p>
+          <p class="empty-hint">Doubt cross-checks agent claims against actual CI logs — no interrogation, just ground truth</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── Bottom Summary Bar ─── -->
+  <footer id="summaryBar" class="summary-bar" style="display: none;">
+    <div class="summary-content" id="summaryContent"></div>
+  </footer>
+
+  <!-- ─── End Screen Overlay ─── -->
+  <div id="endScreen" class="end-screen" style="display: none;">
+    <div class="end-card">
+      <div class="end-header">
+        <span class="end-badge">DEPLOYMENT BLOCKED</span>
+        <h1 class="end-title">Verification Report</h1>
+      </div>
+      <div class="end-body" id="endBody"></div>
+      <div class="end-footer">
+        <div class="build-receipt">
+          <p class="receipt-label">About this build</p>
+          <p class="receipt-text">
+            Built solo. Real LLM agent, real structured output, real CI log verification.
+            Catches confident-completion-of-incomplete-work — the failure mode where the
+            agent's trace looks clean but the work was never done. Observability tools
+            detect drift after the fact. <strong>Doubt proves the claim is true before
+            the action fires.</strong>
+          </p>
+        </div>
+        <button class="btn btn-ghost" onclick="closeEndScreen()">← Back to Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── About Modal Overlay ─── -->
+  <div id="aboutModal" class="end-screen" style="display: none;">
+    <div class="end-card" style="max-width: 600px;">
+      <div class="end-header" style="text-align: left; padding-bottom: var(--space-md);">
+        <h1 class="end-title" style="font-size: 1.4rem;">What is Doubt?</h1>
+      </div>
+      <div class="end-body" style="padding: var(--space-xl); font-size: 0.95rem; line-height: 1.7; color: var(--text-primary);">
+        <p style="margin-bottom: var(--space-md);">Autonomous AI agents suffer from a critical flaw: <strong>"Confident Incompletion."</strong> They frequently skip steps or hallucinate results, yet report back with 100% confidence that the task is complete.</p>
+        
+        <p style="margin-bottom: var(--space-md);">Current solutions try to interrogate the agent or score its output. But if an agent hallucinated running a test suite, asking it "Are you sure?" just yields a hallucinated "Yes."</p>
+
+        <p style="margin-bottom: var(--space-md); padding: var(--space-md); background: var(--bg-elevated); border-left: 3px solid var(--blue-base); border-radius: var(--radius-sm);">
+          <strong>Doubt's thesis: You don't interrogate the agent. You verify the world.</strong>
+        </p>
+
+        <p>Doubt is a pre-execution verification gate. Before an agent executes an irreversible action, Doubt intercepts its claims and deterministically cross-checks them against the actual Ground Truth system of record (e.g., CI/CD logs, Stripe APIs). If the ground truth contradicts the agent, the action is blocked.</p>
+      </div>
+      <div class="end-footer" style="text-align: right; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeAboutModal()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
