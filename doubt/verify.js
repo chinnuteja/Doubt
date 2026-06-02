@@ -25,16 +25,16 @@ function loadPack(packId) {
 /**
  * Main verification function.
  * 
- * Takes the agent's output, raw log content, API key, and pack ID.
+ * Takes the agent's output, raw log content, API key, endpoint, and pack ID.
  * Cross-checks every claim intelligently using an LLM.
  */
-async function verifyAgentOutput(agentOutput, logContent, apiKey, packId = 'devops_qa') {
-  if (!apiKey) {
-    throw new Error('Azure API key is required for Doubt Level 1 Verification Engine.');
+async function verifyAgentOutput(agentOutput, logContent, apiKey, endpoint, packId = 'devops_qa') {
+  if (!apiKey || !endpoint) {
+    throw new Error('Azure API key and endpoint are required for Doubt Level 1 Verification Engine.');
   }
 
   const openai = new AzureOpenAI({
-    endpoint: "https://openaiservices-dev.openai.azure.com/",
+    endpoint: endpoint,
     apiKey: apiKey,
     apiVersion: "2024-12-01-preview"
   });

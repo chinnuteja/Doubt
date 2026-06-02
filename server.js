@@ -103,12 +103,18 @@ app.post('/api/run-agent', async (req, res) => {
     const env = loadMockEnv();
     const prompt = buildAgentPrompt(env);
 
-    // Use provided Azure key
-    const apiKey = "c2da9714dffe410e97e5bbd04bd75195";
+    // Read Azure API key from environment
+    const apiKey = process.env.AZURE_OPENAI_API_KEY;
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+
+    if (!apiKey || !endpoint) {
+      console.log('[Agent] No API key/endpoint found — using scripted demo response');
+      return res.json(getScriptedAgentResponse());
+    }
 
     console.log('[Agent] Sending code review to LLM...');
     const openai = new AzureOpenAI({
-      endpoint: "https://openaiservices-dev.openai.azure.com/",
+      endpoint: endpoint,
       apiKey: apiKey,
       apiVersion: "2024-12-01-preview"
     });
@@ -175,8 +181,9 @@ app.post('/api/verify', async (req, res) => {
     }
 
     console.log('[Doubt] Running intelligent LLM ground-truth verification...');
-    const apiKey = "c2da9714dffe410e97e5bbd04bd75195";
-    const report = await verifyAgentOutput(agentOutput, logContent, apiKey, packId);
+    const apiKey = process.env.AZURE_OPENAI_API_KEY;
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+    const report = await verifyAgentOutput(agentOutput, logContent, apiKey, endpoint, packId);
     
     console.log(
       `[Doubt] Verification complete: score=${report.doubtScore}, blocked=${report.blocked}`
